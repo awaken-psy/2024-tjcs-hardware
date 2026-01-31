@@ -1,0 +1,69 @@
+# ==========================================
+# Vivado 全局忽略规则 (适用于多项目管理)
+# ==========================================
+
+# --- 忽略所有子目录下的 Vivado 运行日志和交互记录 ---
+**/*.jou
+**/*.log
+**/*.str
+**/*.pb
+**/*.pptx
+**/*.zip
+
+# --- 忽略所有项目产生的临时文件夹 ---
+**/ .Xil/
+**/xsim.dir/
+**/*.cache/
+**/*.hw/
+**/*.ip_user_files/
+**/*.runs/
+**/*.sim/
+
+# --- 忽略编译生成的二进制流文件 (如需保留固件，请手动 add -f) ---
+**/*.bit
+**/*.bin
+**/*.prm
+**/*.mcs
+**/*.ltx
+**/*.sysdef
+**/*.hwdef
+**/*.xsa
+
+# --- 忽略仿真相关的临时数据 ---
+**/xsim.jou
+**/xsim.log
+**/xvlog.log
+**/xvlog.pb
+**/xelab.log
+**/xelab.pb
+**/webtalk*
+**/*.vcd
+**/*.wdb
+
+# --- 忽略 IP 核生成的中间文件 ---
+# 关键：我们只保留 .xci 文件，其余由 Vivado 自动生成
+**/ip/*/*.xml
+**/ip/*/*.log
+**/ip/*/*.txt
+**/ip/*/doc/
+**/ip/*/synth/
+**/ip/*/sim/
+**/ip/*/hdl/
+
+# --- 忽略 Block Design 产生的中间文件 ---
+**/bd/*/hw_handoff/
+**/bd/*/ipshared/
+**/bd/*/hdl/
+**/bd/*/ui/*.txt
+
+# --- 忽略软件开发环境 (Vitis / SDK) ---
+**/.sdk/
+**/*.vitis/
+**/IDE_workspace/
+
+# --- 忽略操作系统与常见编辑器临时文件 ---
+.DS_Store
+Thumbs.db
+**/.vscode/
+**/.idea/
+**/*.swp
