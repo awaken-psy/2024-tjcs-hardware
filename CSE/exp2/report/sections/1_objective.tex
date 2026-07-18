@@ -1,0 +1,11 @@
+\section{实验目的}
+
+\begin{enumerate}[leftmargin=2em]
+    \item 在实验一已完成的支持89条指令的OpenMIPS CPU基础上，搭建包含Wishbone总线互连、GPIO、UART、SPI Flash和DDR2 SDRAM的完整SoC系统。
+    \item 理解Wishbone片上总线协议，掌握共享总线互连方式下主从设备的地址解码与仲裁机制。
+    \item 了解SPI Flash的读取时序，实现通过STARTUPE2原语输出SPI时钟、从Flash中一次性读取4字节数据的控制器。
+    \item 了解DDR2 SDRAM的基本工作原理，使用Xilinx MIG（Memory Interface Generator）IP核实现DDR2接口，完成DDR2的初始化校准与读写操作。
+    \item 掌握BootLoader的工作流程：从SPI Flash中读取BootLoader和操作系统映像到DDR2 SDRAM，然后跳转到SDRAM执行。
+    \item 在Ubuntu环境下搭建MIPS交叉编译工具链，修改BootLoader和$\mu$C/OS-II源码中的UART分频参数，完成操作系统的交叉编译与二进制文件生成。
+    \item 将BootLoader+$\mu$C/OS-II合并的二进制文件烧录到SPI Flash中，下载比特流到FPGA开发板，通过串口终端（SuperCom）观察到$\mu$C/OS-II的启动输出。
+\end{enumerate}

@@ -1,0 +1,81 @@
+\section{CPU整体架构}
+
+\subsection{五级流水线结构}
+
+本实验基于OpenMIPS处理器设计，采用经典的五级流水线架构：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{IF（取指）阶段}：由\texttt{pc\_reg}模块根据当前PC值从指令存储器中取出指令。支持顺序取指、分支跳转和异常跳转三种PC更新方式。
+    \item \textbf{ID（译码）阶段}：由\texttt{id}模块对指令进行解码，确定ALU操作类型、操作数来源、目标寄存器等。同时实现数据前推（forwarding）和load-use冒险检测。
+    \item \textbf{EX（执行）阶段}：由\texttt{ex}模块执行具体的运算操作，包括逻辑运算、移位运算、算术运算、乘法运算、HI/LO寄存器操作、CP0寄存器读写和自陷指令判断。
+    \item \textbf{MEM（访存）阶段}：由\texttt{mem}模块完成load/store指令的数据存储器访问，同时处理异常检测与异常类型的最终确定。
+    \item \textbf{WB（写回）阶段}：将执行结果写回通用寄存器堆或HI/LO寄存器。
+\end{enumerate}
+
+流水线各级之间通过流水线寄存器（\texttt{if\_id}、\texttt{id\_ex}、\texttt{ex\_mem}、\texttt{mem\_wb}）进行数据传递，所有流水线寄存器均支持流水线暂停（stall）和流水线清空（flush）功能。
+
+\subsection{系统顶层结构}
+
+整个系统自顶向下分为三个层次：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{板级顶层}（\texttt{openmips\_board}）：负责时钟分频、数码管显示控制和显示内容选择。包含两个分频器（分别用于数码管扫描和CPU时钟），一个七段数码管驱动模块，以及SoC顶层模块。
+    \item \textbf{SoC顶层}（\texttt{openmips\_min\_sopc}）：连接CPU核心、指令ROM和数据RAM，构成最小片上系统。
+    \item \textbf{CPU核心}（\texttt{openmips}）：包含五级流水线的全部模块以及辅助模块（HI/LO寄存器、除法器、LLbit寄存器、CP0协处理器、流水线控制器）。
+\end{itemize}
+
+\subsection{模块列表}
+
+\begin{table}[H]
+    \centering
+    \caption{设计模块一览}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{模块名} & \textbf{功能} & \textbf{所属层次} \\
+        \midrule
+        \texttt{openmips\_board} & 板级顶层，时钟分频与数码管 & 顶层 \\
+        \texttt{seg7x16} & 8位七段数码管扫描驱动 & 顶层 \\
+        \texttt{divider} & 参数化时钟分频器 & 顶层 \\
+        \texttt{openmips\_min\_sopc} & SoC顶层，连接CPU与存储器 & SoC层 \\
+        \texttt{inst\_rom\_for\_cpu89} & 指令ROM（IP核） & SoC层 \\
+        \texttt{data\_ram} & 数据RAM（4字节bank） & SoC层 \\
+        \texttt{openmips} & CPU核心顶层 & CPU层 \\
+        \texttt{pc\_reg} & PC寄存器 & IF \\
+        \texttt{if\_id} & IF/ID流水线寄存器 & IF$\to$ID \\
+        \texttt{id} & 译码模块 & ID \\
+        \texttt{regfile} & 通用寄存器堆（32$\times$32位） & ID \\
+        \texttt{id\_ex} & ID/EX流水线寄存器 & ID$\to$EX \\
+        \texttt{ex} & 执行模块 & EX \\
+        \texttt{ex\_mem} & EX/MEM流水线寄存器 & EX$\to$MEM \\
+        \texttt{mem} & 访存模块 & MEM \\
+        \texttt{mem\_wb} & MEM/WB流水线寄存器 & MEM$\to$WB \\
+        \texttt{hilo\_reg} & HI/LO乘除法结果寄存器 & 辅助 \\
+        \texttt{div} & 试商法除法器 & 辅助 \\
+        \texttt{LLbit\_reg} & 原子操作标志寄存器 & 辅助 \\
+        \texttt{cp0\_reg} & CP0协处理器寄存器 & 辅助 \\
+        \texttt{ctrl} & 流水线控制与异常处理 & 控制 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{关键设计参数}
+
+\begin{table}[H]
+    \centering
+    \caption{关键设计参数}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{参数} & \textbf{值} \\
+        \midrule
+        字节序 & 大端模式（Big-Endian） \\
+        指令存储器起始地址 & \texttt{0x00400000} \\
+        数据存储器起始地址 & \texttt{0x10010000} \\
+        异常处理入口地址 & \texttt{0x00400004} \\
+        指令ROM容量 & 2048 $\times$ 32位（8 KB） \\
+        数据RAM容量 & 512 $\times$ 32位（2 KB） \\
+        通用寄存器数量 & 32个（32位） \\
+        板载时钟频率 & 100 MHz \\
+        CPU工作时钟 & 经分频后约500 Hz \\
+        \bottomrule
+    \end{tabular}
+\end{table}

@@ -1,0 +1,82 @@
+\section{指令集设计}
+
+\subsection{指令分类概述}
+
+本CPU共支持89条MIPS指令，按功能分为以下几类：
+
+\begin{table}[H]
+    \centering
+    \caption{指令分类汇总}
+    \begin{tabular}{llc}
+        \toprule
+        \textbf{类别} & \textbf{指令} & \textbf{数量} \\
+        \midrule
+        逻辑运算 & and, andi, or, ori, xor, xori, nor, lui & 8 \\
+        移位运算 & sll, sllv, srl, srlv, sra, srav & 6 \\
+        移动操作 & mfhi, mflo, mthi, mtlo, movn, movz & 6 \\
+        算术运算 & add, addi, addiu, addu, sub, subu, slt, slti, sltu, sltiu, clz, clo & 12 \\
+        乘法运算 & mul, mult, multu, madd, maddu, msub, msubu & 7 \\
+        除法运算 & div, divu & 2 \\
+        分支跳转 & j, jal, jr, jalr, beq, bne, bgez, bgezal, bgtz, blez, bltz, bltzal & 12 \\
+        加载指令 & lb, lbu, lh, lhu, lw, lwl, lwr, ll & 8 \\
+        存储指令 & sb, sh, sw, swl, swr, sc & 6 \\
+        CP0指令 & mfc0, mtc0, syscall, break, eret & 5 \\
+        自陷指令 & teq, teqi, tge, tgei, tgeiu, tgeu, tlt, tlti, tltiu, tltu, tne, tnei & 12 \\
+        空操作 & nop, ssnop, sync, pref & 4 \\
+        \midrule
+        \textbf{合计} & & \textbf{88+} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{指令编码格式}
+
+MIPS指令采用固定32位编码，共有三种基本格式：
+
+\subsubsection{R型指令}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+        \hline
+        op [31:26] & rs [25:21] & rt [20:16] & rd [15:11] & sa [10:6] & func [5:0] \\
+        \hline
+        6位 & 5位 & 5位 & 5位 & 5位 & 6位 \\
+        \hline
+    \end{tabular}
+    \caption{R型指令格式}
+\end{table}
+
+适用于：and, or, xor, nor, sll, srl, sra, sllv, srlv, srav, add, addu, sub, subu, slt, sltu, mult, multu, div, divu, mfhi, mflo, mthi, mtlo, movn, movz, jr, jalr, syscall, break, 自陷指令等。
+
+\subsubsection{I型指令}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        op [31:26] & rs [25:21] & rt [20:16] & immediate [15:0] \\
+        \hline
+        6位 & 5位 & 5位 & 16位 \\
+        \hline
+    \end{tabular}
+    \caption{I型指令格式}
+\end{table}
+
+适用于：addi, addiu, andi, ori, xori, slti, sltiu, lui, beq, bne, bgtz, blez, lb, lbu, lh, lhu, lw, lwl, lwr, ll, sb, sh, sw, swl, swr, sc 等。REGIMM 类分支指令（bgez, bltz, bgezal, bltzal）及自陷立即数指令也使用此格式。
+
+\subsubsection{J型指令}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|}
+        \hline
+        op [31:26] & address [25:0] \\
+        \hline
+        6位 & 26位 \\
+        \hline
+    \end{tabular}
+    \caption{J型指令格式}
+\end{table}
+
+适用于：j, jal。跳转目标地址由 PC 高4位与指令中26位地址左移2位拼接而成。

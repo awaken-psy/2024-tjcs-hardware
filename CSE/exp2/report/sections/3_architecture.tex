@@ -1,0 +1,141 @@
+\section{系统架构}
+
+\subsection{整体架构}
+
+本实验在实验一的OpenMIPS CPU基础上，构建了一个完整的片上系统（SoC），系统结构如图~\ref{fig:architecture}所示。系统采用Wishbone共享总线互连方式，CPU作为主设备通过Wishbone总线连接四个从设备：DDR2 SDRAM控制器、UART控制器、GPIO模块和SPI Flash控制器。
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        box/.style={draw, thick, minimum width=2.8cm, minimum height=1.1cm,
+                     align=center, font=\small},
+        cpu/.style={box, fill=blue!12},
+        bus/.style={box, fill=orange!15, minimum width=10cm},
+        slave/.style={box, fill=green!10, minimum width=2.4cm},
+        clkbox/.style={box, fill=yellow!15, minimum width=2.4cm},
+        arr/.style={-Stealth, thick},
+    ]
+        % CPU
+        \node[cpu] (cpu) at (0, 2) {OpenMIPS\\CPU};
+
+        % Wishbone bus
+        \node[bus] (wb) at (0, 0) {Wishbone 共享总线（WB\_CONMAX）};
+
+        % Slaves
+        \node[slave] (ddr2) at (-4.5, -2) {DDR2 SDRAM\\控制器};
+        \node[slave] (uart) at (-1.5, -2) {UART\\16550};
+        \node[slave] (gpio) at (1.5, -2) {GPIO};
+        \node[slave] (flash) at (4.5, -2) {SPI Flash\\控制器};
+
+        % External
+        \node[box, fill=gray!15, minimum width=2cm] (mig) at (-4.5, -3.8) {MIG IP};
+        \node[box, fill=gray!15, minimum width=2cm] (mem) at (-4.5, -5.2) {DDR2\\芯片};
+        \node[box, fill=gray!15, minimum width=2cm] (flashchip) at (4.5, -3.8) {S25FL128S\\Flash};
+        \node[box, fill=gray!15, minimum width=2cm] (pcuart) at (-1.5, -3.8) {PC\\(SuperCom)};
+
+        % Clock
+        \node[clkbox] (clk) at (0, 3.6) {Clocking Wizard\\100 MHz $\to$ 50/200 MHz};
+
+        % CPU <-> Bus
+        \draw[arr] (cpu) -- (wb) node[midway, right, font=\footnotesize] {主设备};
+
+        % Bus <-> Slaves
+        \draw[arr] (wb.south -| ddr2) -- (ddr2);
+        \draw[arr] (wb.south -| uart) -- (uart);
+        \draw[arr] (wb.south -| gpio) -- (gpio);
+        \draw[arr] (wb.south -| flash) -- (flash);
+
+        % Address labels
+        \node[font=\tiny\ttfamily, color=red!70!black] at (-4.5, -1.15) {0x0xxx\_xxxx};
+        \node[font=\tiny\ttfamily, color=red!70!black] at (-1.5, -1.15) {0x1xxx\_xxxx};
+        \node[font=\tiny\ttfamily, color=red!70!black] at (1.5, -1.15) {0x2xxx\_xxxx};
+        \node[font=\tiny\ttfamily, color=red!70!black] at (4.5, -1.15) {0x3xxx\_xxxx};
+
+        % External connections
+        \draw[arr, <->] (ddr2) -- (mig);
+        \draw[arr, <->] (mig) -- (mem);
+        \draw[arr, <->] (flash) -- (flashchip);
+        \draw[arr, <->] (uart) -- (pcuart);
+        \draw[arr, <->] (gpio.south) -- ++(0,-0.7) node[below, font=\footnotesize] {数码管 / LED};
+
+        % Clock
+        \draw[arr] (clk) -- (cpu) node[midway, right, font=\footnotesize] {50 MHz};
+        \draw[arr, dashed] (clk.east) -| (flash.north east) node[near end, above, font=\tiny] {50 MHz};
+        \draw[arr, dashed] (clk.west) -| (ddr2.north west) node[near end, above, font=\tiny] {200 MHz};
+    \end{tikzpicture}
+    \caption{系统整体架构}
+    \label{fig:architecture}
+\end{figure}
+
+\subsection{地址映射}
+
+系统使用地址高4位（\texttt{wb\_addr\_i[31:28]}）进行从设备选择，地址映射关系如表~\ref{tab:addr_map}所示。
+
+\begin{table}[H]
+    \centering
+    \caption{地址映射表}
+    \label{tab:addr_map}
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{地址范围} & \textbf{高4位} & \textbf{从设备} & \textbf{说明} \\
+        \midrule
+        \texttt{0x00000000--0x0FFFFFFF} & 4'b0000 & DDR2 SDRAM & 256 MB主存储器 \\
+        \texttt{0x10000000--0x1FFFFFFF} & 4'b0001 & UART16550 & 串口通信 \\
+        \texttt{0x20000000--0x2FFFFFFF} & 4'b0010 & GPIO & 通用输入输出 \\
+        \texttt{0x30000000--0x3FFFFFFF} & 4'b0011 & SPI Flash & 程序存储 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+CPU复位后从地址\texttt{0x30000000}（SPI Flash起始地址）开始取指执行BootLoader。BootLoader首先将存储在Flash中的$\mu$C/OS-II操作系统映像搬移到DDR2 SDRAM中，然后跳转到SDRAM执行操作系统。
+
+\subsection{时钟与复位}
+
+系统时钟由板载100MHz晶振通过时钟向导（Clocking Wizard）IP核产生两个时钟域：
+
+\begin{table}[H]
+    \centering
+    \caption{时钟配置}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{时钟} & \textbf{频率} & \textbf{用途} \\
+        \midrule
+        \texttt{clk\_out1} & 50 MHz & Wishbone总线、CPU、UART、GPIO、Flash控制器 \\
+        \texttt{clk\_out2} & 200 MHz & DDR2 MIG参考时钟 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+复位逻辑采用板载复位按钮和PLL锁定信号的逻辑或：
+\begin{lstlisting}[caption={复位逻辑}]
+assign rst = ~rst_n | ~locked;
+\end{lstlisting}
+其中\texttt{rst\_n}为板载复位按钮（低电平有效），\texttt{locked}为Clocking Wizard输出的PLL锁定信号。该设计确保在PLL未完成锁定时系统保持复位状态，避免在时钟不稳定时出现未知行为。
+
+\subsection{Wishbone总线互连}
+
+本实验采用Wishbone B4规范中的共享总线（Shared Bus）互连方式，由OpenCores提供的WB\_CONMAX模块实现。在该方式下，CPU作为唯一的主设备（Master），通过地址高4位选择不同的从设备（Slave），同一时刻只有一个从设备与主设备通信。
+
+Wishbone总线信号包括：
+
+\begin{table}[H]
+    \centering
+    \caption{Wishbone总线关键信号}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{信号} & \textbf{方向} & \textbf{说明} \\
+        \midrule
+        \texttt{CLK\_I} & 输入 & 总线时钟 \\
+        \texttt{RST\_I} & 输入 & 总线复位 \\
+        \texttt{DAT\_O/DAT\_I} & 双向 & 数据总线（32位） \\
+        \texttt{ADR\_O} & 输出 & 地址总线（32位） \\
+        \texttt{WE\_O} & 输出 & 写使能（1=写，0=读） \\
+        \texttt{SEL\_O} & 输出 & 字节选择（4位） \\
+        \texttt{CYC\_O} & 输出 & 总线周期有效 \\
+        \texttt{STB\_O} & 输出 & 选通有效 \\
+        \texttt{ACK\_I} & 输入 & 从设备应答 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+一次典型的读总线事务流程为：主设备在第一个时钟上升沿输出地址和读控制信号（\texttt{CYC\_O}、\texttt{STB\_O}同时置高），从设备在下一个时钟上升沿将数据放到\texttt{DAT\_I}并拉高\texttt{ACK\_I}，主设备采样数据后释放总线周期信号。写事务的流程类似，区别在于主设备同时输出写数据。

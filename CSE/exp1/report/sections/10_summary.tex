@@ -1,0 +1,31 @@
+\section{实验总结}
+
+\subsection{实验收获}
+
+通过本次CPU改造实验，我对以下内容有了更深入的理解：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{MIPS指令集架构}：掌握了89条MIPS指令的编码格式、语义和流水线执行过程，理解了R型、I型、J型三种指令格式的设计原理。
+
+    \item \textbf{五级流水线设计}：深入理解了取指、译码、执行、访存、写回五个阶段的划分依据，以及各阶段之间通过流水线寄存器传递数据的机制。
+
+    \item \textbf{冒险处理}：掌握了数据前推（forwarding）解决数据冒险的方法，理解了load-use冒险必须插入气泡的原因，以及控制冒险通过延迟槽处理的机制。
+
+    \item \textbf{异常与中断}：理解了精确异常模型的实现方式——异常在流水线末端（MEM阶段）统一判定，通过flush信号清空流水线，保证异常指令之前的指令全部完成、之后的指令全部取消。
+
+    \item \textbf{CP0协处理器}：掌握了Status、Cause、EPC等关键寄存器的功能和交互方式，理解了时钟中断从触发到响应再到返回的完整流程。
+
+    \item \textbf{FPGA开发流程}：熟悉了Vivado工具链从创建工程、添加源文件、创建IP核、综合实现到下载验证的完整流程。
+\end{enumerate}
+
+\subsection{遇到的问题与解决方法}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{问题}：MARS导出机器码时，需要将汇编程序转换为Vivado IP核可识别的COE格式，但MARS默认导出的是十六进制文本文件，无法直接作为COE文件使用。\\
+          \textbf{解决}：在MARS中选择 File $\rightarrow$ Dump Memory，导出格式选择"Binary Text"，得到每行一条32位二进制指令的文本文件。随后编写脚本在文件头部添加 \texttt{memory\_initialization\_radix=2;} 和 \texttt{memory\_initialization\_vector=} 头信息，每行末尾添加逗号分隔符，将其转换为标准COE格式，成功用于Distributed Memory Generator IP核的初始化。
+
+    \item \textbf{问题}：Vivado综合阶段报告关键路径时序违规（Timing Not Met），提示 \texttt{WNS}（Worst Negative Slack）为负值，涉及的路径主要在除法器的32轮迭代逻辑和多级数据前推的组合逻辑链上。\\
+          \textbf{解决}：分析发现时序约束是针对板载100MHz时钟（10ns周期）设定的，而实际CPU工作时钟经过 \texttt{divider}模块100000倍分频后频率远低于1kHz，组合逻辑延迟在实际工作频率下完全满足要求。因此该时序违规警告不影响实际功能，可安全忽略。
+
+\end{enumerate}
+

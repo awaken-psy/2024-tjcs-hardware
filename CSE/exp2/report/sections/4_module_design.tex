@@ -1,0 +1,172 @@
+\section{核心模块设计}
+
+\subsection{GPIO模块}
+
+GPIO（General Purpose Input/Output）模块提供通用的输入输出接口。本实验使用OpenCores提供的GPIO IP核，连接到Wishbone从设备接口\texttt{slv\_sel[2]}。CPU通过GPIO读取外部输入信号或控制外部输出设备。
+
+在本实验中，GPIO的主要用途是：
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{输入}：读取SDRAM初始化完成信号（\texttt{sdram\_init\_done}），BootLoader通过轮询GPIO的第16位等待DDR2完成校准。
+    \item \textbf{输出}：驱动数码管显示，$\mu$C/OS-II启动后通过GPIO输出数据到数码管进行递增显示。
+\end{itemize}
+
+\subsection{UART模块}
+
+UART（Universal Asynchronous Receiver/Transmitter）模块实现异步串行通信，用于将$\mu$C/OS-II的输出信息发送到PC端的串口终端。本实验使用OpenCores提供的UART16550 IP核，连接到Wishbone从设备接口\texttt{slv\_sel[1]}。
+
+UART控制器内部分频系数设置为651，对应4800波特率（50 MHz $\div$ 651 $\div$ 16 $\approx$ 4800）。数据格式为8位数据位、无校验位、1位停止位（8-N-1）。
+
+开发板上的UART引脚连接为：
+\begin{table}[H]
+    \centering
+    \caption{UART引脚映射}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{功能} & \textbf{FPGA引脚} & \textbf{Nexys4 DDR标识} \\
+        \midrule
+        TXD（发送） & D4 & JD1 \\
+        RXD（接收） & C4 & JD2 \\
+        CTS & D3 & JD3 \\
+        RTS & E5 & JD4 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+通过USB-UART桥接芯片，开发板的UART接口映射为PC的COM3串口。
+
+\subsection{SPI Flash控制器}
+
+SPI Flash控制器负责从SPI Flash中读取BootLoader和操作系统映像。本实验使用的SPI Flash芯片为Spansion S25FL128S，容量为128 Mbit（16 MB），通过SPI（Serial Peripheral Interface）协议进行通信。
+
+\subsubsection{SPI协议与时钟输出}
+
+SPI通信使用4根信号线：
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{sck}：SPI时钟
+    \item \texttt{cs\_n}：片选信号（低电平有效）
+    \item \texttt{si}（MOSI）：主机到从机的数据线
+    \item \texttt{so}（MISO）：从机到主机的数据线
+\end{itemize}
+
+由于SPI Flash的SCK引脚直接连接到FPGA的专用配置引脚，普通IO无法驱动，因此使用Xilinx Artix-7的STARTUPE2原语，通过其\texttt{USRCCLKO}端口输出SPI时钟：
+\begin{lstlisting}[caption={STARTUPE2原语连接}]
+STARTUPE2 #(
+    .PROG_USR("FALSE"),
+    .SIM_CCLK_FREQ(0)
+) STARTUPE2_inst (
+    .CFGCLK    (),
+    .CFGMCLK   (),
+    .EOS       (),
+    .PREQ      (),
+    .CLK       (clk),
+    .GSR       (1'b0),
+    .GTS       (1'b0),
+    .KEYCLEARB (1'b0),
+    .PACK      (1'b0),
+    .USRCCLKO  (flash_clk),
+    .USRCCLKTS (1'b0),
+    .USRDONEO  (),
+    .USRDONETS (1'b1)
+);
+\end{lstlisting}
+
+\subsubsection{读取命令与时序}
+
+Flash读取操作使用READ命令（指令码\texttt{0x03}），一次读取4字节（32位）数据的时序流程如下：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 拉低\texttt{cs\_n}选中Flash芯片。
+    \item 通过\texttt{si}线依次发送READ指令（8位）和24位读取地址，共计32个SCK时钟周期。
+    \item Flash芯片通过\texttt{so}线依次返回4字节数据，每字节8位，共32个SCK时钟周期。
+    \item 拉高\texttt{cs\_n}结束本次读取。
+\end{enumerate}
+
+\subsubsection{控制器状态机}
+
+Flash控制器采用有限状态机实现，主要状态包括：
+
+\begin{table}[H]
+    \centering
+    \caption{Flash控制器状态机}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{状态} & \textbf{功能} \\
+        \midrule
+        IDLE & 空闲，等待CPU发起读请求 \\
+        START & 发送READ指令（8位） \\
+        ADDR1--ADDR3 & 发送24位读取地址 \\
+        READ\_DATA1--READ\_DATA5 & 接收4字节数据并逐位移位累积 \\
+        DONE & 拉高\texttt{cs\_n}，通过Wishbone返回数据 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+在READ\_DATA阶段，控制器使用\texttt{datain\_shift}移位寄存器逐位累积从\texttt{so}线接收到的数据。每8位构成一个完整字节，4个字节拼接为32位的\texttt{read\_data}，通过Wishbone总线返回给CPU。
+
+\subsection{DDR2 SDRAM控制器}
+
+DDR2 SDRAM控制器基于Xilinx MIG（Memory Interface Generator）IP核实现，为CPU提供256 MB的主存储空间。
+
+\subsubsection{MIG IP核配置}
+
+MIG IP核的关键配置参数：
+
+\begin{table}[H]
+    \centering
+    \caption{MIG IP核关键参数}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{参数} & \textbf{值} \\
+        \midrule
+        存储器类型 & DDR2 SDRAM \\
+        数据位宽 & 16位（外部总线） \\
+        突发长度 & 8（一次读/写128位数据） \\
+        用户接口数据宽度 & 128位 \\
+        用户接口时钟 & \texttt{ui\_clk}（由MIG内部PLL生成） \\
+        地址宽度 & 27位 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{用户接口信号}
+
+MIG提供简化的用户侧接口（APP接口），主要信号包括：
+
+\begin{table}[H]
+    \centering
+    \caption{MIG APP接口信号}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{信号} & \textbf{方向} & \textbf{说明} \\
+        \midrule
+        \texttt{app\_addr[26:0]} & 输入 & 访问地址 \\
+        \texttt{app\_cmd[2:0]} & 输入 & 命令：001=读，000=写 \\
+        \texttt{app\_en} & 输入 & 命令使能 \\
+        \texttt{app\_rdy} & 输出 & 命令就绪（可接受新命令） \\
+        \texttt{app\_wdf\_data[127:0]} & 输入 & 写数据 \\
+        \texttt{app\_wdf\_end} & 输入 & 写数据最后一拍 \\
+        \texttt{app\_wdf\_wren} & 输入 & 写数据有效 \\
+        \texttt{app\_wdf\_rdy} & 输出 & 写数据通道就绪 \\
+        \texttt{app\_rd\_data[127:0]} & 输出 & 读数据 \\
+        \texttt{app\_rd\_data\_valid} & 输出 & 读数据有效 \\
+        \texttt{app\_sr\_req} & 输入 & 自刷新请求 \\
+        \texttt{app\_ref\_req} & 输入 & 刷新请求 \\
+        \texttt{ui\_clk} & 输出 & 用户侧时钟 \\
+        \texttt{ui\_clk\_sync\_rst} & 输出 & 用户侧复位 \\
+        \texttt{init\_calib\_complete} & 输出 & 初始化校准完成 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+MIG在FPGA配置完成后自动进行DDR2的初始化校准序列。校准完成后，\texttt{init\_calib\_complete}信号拉高，表示DDR2已准备好接受读写操作。本实验中该信号通过GPIO的第16位传递给CPU，BootLoader通过轮询该位等待DDR2就绪。
+
+\subsubsection{DDR2 Wishbone桥接}
+
+由于MIG的用户侧接口（APP接口）与Wishbone总线协议不同，需要一个桥接模块完成协议转换。桥接模块的主要功能包括：
+
+\begin{itemize}[leftmargin=2em]
+    \item 将Wishbone单次32位读写请求转换为MIG的128位突发读写。
+    \item 写操作时，将32位数据对齐拼接到128位的\texttt{app\_wdf\_data}中。
+    \item 读操作时，从128位的\texttt{app\_rd\_data}中提取对应的32位数据返回。
+    \item 处理\texttt{app\_rdy}和\texttt{app\_wdf\_rdy}的反压信号，在MIG忙碌时等待。
+\end{itemize}

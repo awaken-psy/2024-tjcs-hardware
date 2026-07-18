@@ -1,0 +1,23 @@
+\section{实验环境}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{项目} & \textbf{说明} \\
+        \midrule
+        FPGA 开发板 & Nexys 4 DDR（Artix-7 100T，\texttt{xc7a100tcsg324-1}） \\
+        板载 Flash & Spansion S25FL128S（128Mbit Quad-SPI） \\
+        板载 USB-UART & FTDR 桥，PC 枚举为 \texttt{COM3}（USB Serial Port） \\
+        EDA 工具 & Vivado 2024.2 \\
+        交叉编译器 & \texttt{mips-sde-elf-gcc 5.3.0}（Sourcery CodeBench Lite 2016.05） \\
+        编译主机 & WSL2 Ubuntu（64 位，需 \texttt{libc6:i386} 等 32 位兼容库） \\
+        PC 端运行时 & Python 3.13 + pygame 2.6.1 + pyserial 3.5 \\
+        串口通信参数 & \textbf{4800 bps}，8 数据位，无校验，1 停止位 \\
+        板载按钮 & BTNC（中/开始）、BTNU/BTND/BTNL/BTNR（上/下/左/右） \\
+        \bottomrule
+    \end{tabular}
+    \caption{实验环境}
+\end{table}
+
+\noindent \textbf{关于波特率 4800：}\texttt{openmips.h} 中 \texttt{IN\_CLK} 注释写为 100\,MHz，据此 \texttt{uart\_init} 计算的分频系数为 $100\text{M}/(16\times 9600)\approx 651$；但 OpenMIPS 实际运行在 clk\_wiz 输出的 \textbf{50\,MHz} 时钟上，故实际波特率为 $50\text{M}/(16\times 651)\approx 4800$\,bps。PC 端串口必须匹配 4800 才能正确收帧（与实验二 SuperCom 的 4800 配置一致）。

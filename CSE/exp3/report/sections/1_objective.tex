@@ -1,0 +1,12 @@
+\section{实验目的}
+
+本实验在实验二已成功将 $\mu$C/OS-II 移植到 OpenMIPS 处理器的基础上，进行桌面应用开发。具体目标如下：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 在 OpenMIPS + $\mu$C/OS-II SoC 平台上开发一个完整的交互式桌面应用——\textbf{贪吃蛇游戏}，巩固在实时操作系统上编写用户任务的能力。
+    \item 设计 FPGA 与 PC 之间的\textbf{UART 通信协议}：FPGA 端运行游戏逻辑并通过串口把游戏状态（蛇身、食物、分数）发送给 PC，PC 端解析后用 \textbf{pygame} 渲染图形界面，理解嵌入式系统中"主机—外设"的协同分工。
+    \item 掌握 \textbf{MIPS 交叉编译工具链}的获取与使用，完成 $\mu$C/OS-II 内核与用户程序的编译、链接，生成可烧录的 \texttt{OS.bin}。
+    \item 通过对硬件约束（GPIO 按钮引脚、七段数码管）和软件逻辑的协同修改，复习并串联\textbf{计算机组成原理}（CPU、总线、外设）、\textbf{操作系统}（任务调度、时钟节拍）与\textbf{编译原理}（交叉编译、链接脚本）等知识。
+\end{enumerate}
+
+\noindent 与学长参考实现（VGA 翻牌游戏）相比，本实验在显示方式上做了改进：\textbf{不使用板载 VGA 硬件}，而是将画面渲染放在 PC 端用 pygame 图形界面显示，FPGA 仅作为"游戏主机"负责游戏逻辑运算与状态上报，更贴近真实嵌入式系统"瘦主机+胖客户端"的架构。

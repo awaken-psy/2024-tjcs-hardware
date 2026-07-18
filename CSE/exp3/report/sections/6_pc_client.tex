@@ -1,0 +1,42 @@
+\section{PC 端设计}
+
+PC 端用 Python + pygame 实现，包含一个调试脚本和一个图形界面，以及自动检测串口的启动器。
+
+\subsection{协议解析与帧同步}
+
+串口接收采用"搜帧头 + 定长读取 + 校验"的经典策略：在接收缓冲里查找 \texttt{0xAA 0x55}，找到后尝试读取 41 字节，校验 XOR checksum 通过才视为有效帧。这种自同步方式对串口乱序、丢字节都具有鲁棒性。
+
+\begin{lstlisting}[style=py, caption={帧解析（snake\_gui.py）}]
+def parse(frame):
+    chk = 0
+    for b in frame[2:40]:
+        chk ^= b
+    if chk != frame[40]:
+        return None               # 校验失败，丢弃
+    state = frame[2]
+    score = frame[3] | (frame[4] << 8)
+    fx, fy = frame[5] >> 4, frame[5] & 0xF
+    hx, hy = frame[6] >> 4, frame[6] & 0xF
+    length = frame[7]
+    return state, score, fx, fy, hx, hy, length, bytes(frame[8:40])
+\end{lstlisting}
+
+\subsection{双线程渲染架构}
+
+为避免串口读取阻塞画面，采用\textbf{后台读线程 + 主渲染线程}结构：后台线程持续解析串口并把最新帧放入队列，主线程以 30\,FPS 轮询队列、重绘画面。位图按行优先高位在前的规则还原 16$\times$16 网格，蛇身画绿色方块、蛇头（由 \texttt{head} 字段指示）高亮深绿、食物画红色圆角块，顶栏显示分数与游戏状态。
+
+\begin{lstlisting}[style=py, caption={主渲染循环（节选）}]
+for y in range(GRID):
+    for x in range(GRID):
+        idx = y * GRID + x
+        bit = (bitmap[idx >> 3] >> (7 - (idx & 7))) & 1
+        if bit:
+            color = (90,255,90) if (x==hx and y==hy) else (40,170,40)
+            pygame.draw.rect(screen, color, rect)
+\end{lstlisting}
+
+\subsection{调试工具与启动器}
+
+\texttt{debug\_rx.py} 把接收到的每帧解析后以 ASCII 字符画打印（\texttt{@@}蛇头、\texttt{[]}蛇身、\texttt{**}食物、\texttt{.} 空），用于在 GUI 之前单独验证 FPGA 发帧与协议正确性。
+
+\texttt{play.py} 是启动器，用 \texttt{pyserial} 枚举串口、自动挑出板子（描述含 "USB Serial Port"/"Digilent" 等、排除蓝牙），免去手记 COM 号；支持 \texttt{--debug} 切换调试模式，并提供 \texttt{play.bat}（Windows 双击）与 \texttt{play.sh}（Git Bash）两种入口。

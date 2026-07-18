@@ -1,0 +1,10 @@
+\section{实验目的}
+
+\begin{enumerate}[leftmargin=2em]
+    \item 深入理解MIPS指令集体系结构，掌握五级流水线CPU的工作原理。
+    \item 在已有的支持54条指令的OpenMIPS流水线CPU基础上，将其改造为支持89条MIPS指令的完整CPU。
+    \item 新增指令包括：乘累加/乘累减指令（madd、maddu、msub、msubu）、除法指令（div、divu）、分支跳转指令（bgez、bgtz、blez、bltz、bltzal、bgezal、jalr）、访存指令（sb、lb、lbu、sh、lh、lhu、lwl、lwr、swl、swr、ll、sc）、移动指令（movn、movz）、算术指令（clz、clo、sltu、sllv、srav、srlv、sra、srl、subu、addu、slt等）、CP0协处理器指令（mfc0、mtc0、syscall、break、eret）、自陷指令（teq、tge、tgeu、tlt、tltu、tne及其立即数形式）。
+    \item 实现CP0协处理器中的Count、Compare、Status、Cause、EPC等寄存器功能。
+    \item 实现时钟中断机制。
+    \item 将设计下载到Nexys DDR（Artix-7）FPGA开发板上进行验证。
+\end{enumerate}

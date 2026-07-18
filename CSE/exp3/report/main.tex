@@ -1,0 +1,144 @@
+\documentclass[12pt,a4paper]{article}
+
+% ==================== 宏包 ====================
+\usepackage[UTF8]{ctex}                    % 中文支持
+\usepackage[margin=2.5cm]{geometry}        % 页边距
+\usepackage{graphicx}                      % 图片
+\graphicspath{{img/}}
+\usepackage{float}                         % 图片浮动控制
+\usepackage{booktabs}                      % 三线表
+\usepackage{longtable}                     % 跨页长表格
+\usepackage{array}                         % 表格列格式
+\usepackage{listings}                      % 代码高亮
+\usepackage{xcolor}                        % 颜色
+\usepackage{hyperref}                      % 超链接
+\usepackage{amsmath}                       % 数学公式
+\usepackage{caption}                       % 图表标题
+\usepackage{subcaption}                    % 子图
+\usepackage{enumitem}                      % 列表控制
+\usepackage{fancyhdr}                      % 页眉页脚
+\usepackage{titlesec}                      % 标题格式
+\usepackage{indentfirst}                   % 首行缩进
+
+% ==================== 代码样式 ====================
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.95}
+\definecolor{codeblue}{rgb}{0.0,0.0,0.8}
+
+\lstdefinestyle{verilog}{
+    language=Verilog,
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{codegray},
+    morekeywords={wire, reg, input, output, module, endmodule, assign,
+                  always, posedge, negedge, begin, end, if, else, case,
+                  endcase, default, parameter, include, define, timescale,
+                  initial, forever},
+    literate={`}{\textasciigrave}1,
+}
+
+\lstdefinestyle{c}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    captionpos=b,
+    numbers=left,
+    numbersep=5pt,
+    frame=single,
+    rulecolor=\color{codegray},
+    morekeywords={int, void, char, unsigned, long, static, extern, volatile,
+                  return, if, else, for, while, do, switch, case, break,
+                  struct, typedef, enum, define, include, sizeof},
+}
+
+\lstdefinestyle{py}{
+    language=Python,
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codeblue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    captionpos=b,
+    numbers=left,
+    numbersep=5pt,
+    frame=single,
+    rulecolor=\color{codegray},
+}
+
+\lstset{style=verilog}
+
+% ==================== TikZ ====================
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, decorations.pathreplacing, fit}
+
+% ==================== 图片占位宏 ====================
+\newcommand{\imgph}[3]{%
+  \begin{figure}[H]
+    \centering
+    \fbox{\parbox[c][5cm][c]{0.75\textwidth}{\centering\textit{【截图占位】}\\[6pt]\small #3}}
+    \caption{#2}\label{#1}
+  \end{figure}}
+
+% ==================== 页眉页脚 ====================
+\setlength{\headheight}{13.6pt}
+\addtolength{\topmargin}{-1.6pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 计算机系统实验}
+\fancyhead[R]{\small 实验三：应用开发实验}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ==================== 超链接样式 ====================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue,
+}
+
+% ==================== 段落设置 ====================
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.5em}
+
+% ==================== 正文 ====================
+\begin{document}
+
+\input{sections/cover.tex}
+
+\newpage
+\tableofcontents
+\newpage
+
+\input{sections/1_objective.tex}
+\input{sections/2_environment.tex}
+\input{sections/3_architecture.tex}
+\input{sections/4_hardware.tex}
+\input{sections/5_software.tex}
+\input{sections/6_pc_client.tex}
+\input{sections/7_verification.tex}
+\input{sections/8_summary.tex}
+
+\end{document}

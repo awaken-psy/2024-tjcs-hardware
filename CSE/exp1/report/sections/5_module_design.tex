@@ -1,0 +1,135 @@
+\section{核心模块设计}
+
+\subsection{取指模块（pc\_reg）}
+
+PC寄存器模块负责产生指令存储器的访问地址。在每个时钟上升沿，PC值按以下优先级更新：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 若 \texttt{flush} 有效，PC更新为异常处理入口地址 \texttt{new\_pc}；
+    \item 若流水线未暂停且分支标志有效，PC更新为分支目标地址；
+    \item 否则，PC自增4（\texttt{pc + 4}）。
+\end{enumerate}
+
+复位时PC初始化为 \texttt{0x00400000}（\texttt{TextBegin}），即指令存储器的起始地址。
+
+\begin{lstlisting}[caption={pc\_reg模块核心逻辑}]
+always @ (posedge clk) begin
+    if (ce == `ChipDisable)
+        pc <= `TextBegin;
+    else if (flush == 1'b1)
+        pc <= new_pc;
+    else if (stall[0] == `NoStop)
+        if (branch_flag_i == `Branch)
+            pc <= branch_target_address_i;
+        else
+            pc <= pc + 4'h4;
+end
+\end{lstlisting}
+
+\subsection{译码模块（id）}
+
+译码模块是设计中最复杂的模块之一，负责以下功能：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{指令解码}：根据操作码（op）、功能码（func）等字段，确定ALU操作类型（\texttt{aluop\_o}）、ALU结果选择（\texttt{alusel\_o}）、源操作数来源和目标寄存器。
+    \item \textbf{数据前推}：从EX和MEM阶段获取尚未写回的计算结果，解决数据冒险。
+    \item \textbf{Load-use冒险检测}：当前一条指令是load且其目标寄存器与当前指令的源寄存器相同时，插入一个流水线气泡（stall）。
+    \item \textbf{分支判断}：对分支指令进行条件判断，计算分支目标地址。
+    \item \textbf{延迟槽处理}：设置 \texttt{next\_inst\_in\_delayslot\_o} 标志。
+    \item \textbf{异常初步检测}：识别syscall和eret指令，标记无效指令。
+\end{itemize}
+
+指令解码按操作码分为以下几类处理：
+
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{op = 6'b000000}（SPECIAL类）：根据 \texttt{func} 字段区分具体指令，包含大部分R型运算指令和自陷指令。
+    \item \texttt{op = 6'b000001}（REGIMM类）：根据 \texttt{rt} 字段区分 bgez/bltz/bgezal/bltzal 及自陷立即数指令。
+    \item \texttt{op = 6'b011100}（SPECIAL2类）：clz、clo、mul、madd、maddu、msub、msubu。
+    \item 其他I型/J型指令：根据 \texttt{op} 字段直接解码。
+    \item CP0指令：通过 \texttt{inst\_i[31:21]} 特定编码识别mfc0、mtc0和eret。
+\end{itemize}
+
+\subsection{执行模块（ex）}
+
+执行模块完成各类运算操作，内部按运算类型分为多个功能单元：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{逻辑运算单元}：执行 AND、OR、XOR、NOR 运算。
+    \item \textbf{移位运算单元}：执行逻辑左移（SLL）、逻辑右移（SRL）、算术右移（SRA）。
+    \item \textbf{算术运算单元}：执行加减法（含溢出检测）、比较运算（SLT/SLTU）、前导零/一计数（CLZ/CLO）。
+    \item \textbf{乘法运算单元}：执行有符号/无符号乘法，支持乘累加/乘累减（MADD/MSUB系列），通过两周期流水线暂停实现。
+    \item \textbf{除法控制}：向除法器模块发出启动信号，等待除法器完成后读取结果。
+    \item \textbf{移动操作单元}：处理MFHI、MFLO、MOVN、MOVZ以及MFC0指令，包含CP0数据前推。
+    \item \textbf{自陷判断单元}：判断自陷条件（相等、大于等于、小于、不等），设置 \texttt{trapassert} 信号。
+    \item \textbf{CP0写控制}：处理MTC0指令，将数据写入CP0寄存器。
+\end{itemize}
+
+最终结果通过 \texttt{alusel\_i} 选择器从各功能单元中选出。同时计算访存地址 \texttt{mem\_addr\_o = reg1\_i + sign\_ext(imm16)} 供MEM阶段使用。
+
+\subsection{访存模块（mem）}
+
+访存模块处理所有load/store指令，实现大端模式下的字节/半字/字访问：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{字节访问}（LB/LBU/SB）：根据地址低2位选择4个字节bank中的对应字节，LB做符号扩展，LBU做零扩展。
+    \item \textbf{半字访问}（LH/LHU/SH）：根据地址低2位选择高/低半字，LH做符号扩展。
+    \item \textbf{字访问}（LW/SW）：直接读写整个32位字。
+    \item \textbf{非对齐访问}（LWL/LWR/SWL/SWR）：通过拼接实现非对齐的字加载/存储。
+    \item \textbf{原子操作}（LL/SC）：LL设置LLbit为1并加载数据，SC在LLbit为1时写入数据并返回1，否则返回0。
+\end{itemize}
+
+访存模块还负责异常的最终判定。它综合考虑中断、syscall、无效指令、自陷、溢出和eret等异常类型，根据CP0的Status和Cause寄存器确定是否真正触发异常，并输出最终的异常类型码。异常发生时，通过 \texttt{mem\_we\_o} 的屏蔽机制确保异常指令不会修改存储器。
+
+\subsection{CP0协处理器（cp0\_reg）}
+
+CP0协处理器模块实现了以下寄存器：
+
+\begin{table}[H]
+    \centering
+    \caption{CP0寄存器}
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{编号} & \textbf{名称} & \textbf{读写} & \textbf{功能} \\
+        \midrule
+        9 & Count & 可读写 & 计数器，每个时钟周期自增1 \\
+        11 & Compare & 可读写 & 比较值，当Count等于Compare时触发时钟中断 \\
+        12 & Status & 可读写 & 状态寄存器，控制中断使能和异常级别 \\
+        13 & Cause & 部分可写 & 原因寄存器，记录异常原因码 \\
+        14 & EPC & 可读写 & 异常返回地址 \\
+        15 & PRId & 只读 & 处理器标识 \\
+        16 & Config & 只读 & 配置信息（大端模式） \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{时钟中断机制}：Count寄存器每周期加1，当Count等于Compare且Compare不为0时，\texttt{timer\_int\_o}置1，向CPU发出时钟中断请求。写入Compare寄存器时自动清除中断。
+
+\textbf{异常处理流程}：当异常发生时，CP0保存当前PC到EPC（延迟槽指令则保存PC-4），将异常原因写入Cause寄存器，并将Status[EXL]置1禁止新的异常。eret指令将Status[EXL]清0恢复正常执行。
+
+\subsection{流水线控制模块（ctrl）}
+
+控制模块统一管理流水线暂停和异常刷新：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{异常刷新}（最高优先级）：当MEM阶段检测到异常时，\texttt{flush}置1，清空整条流水线，PC跳转到异常入口地址 \texttt{0x00400004}（eret则跳转到EPC）。
+    \item \textbf{EX阶段暂停请求}：由除法器或乘累加/减指令引起，暂停IF、ID、EX阶段（\texttt{stall = 6'b001111}）。
+    \item \textbf{ID阶段暂停请求}：由load-use冒险引起，暂停IF和ID阶段（\texttt{stall = 6'b000111}）。
+\end{itemize}
+
+\subsection{数据存储器（data\_ram）}
+
+数据RAM采用4个独立字节bank（\texttt{data\_mem0\textasciitilde 3}）实现，支持按字节选择写入。地址从 \texttt{0x10010000} 起始，实际寻址时减去基地址。地址 \texttt{0x10010000} 处的数据通过 \texttt{result} 端口输出，用于数码管显示。
+
+\subsection{板级接口（openmips\_board）}
+
+板级顶层模块提供以下功能：
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{时钟分频}：100MHz板载时钟分频为约500Hz的CPU时钟和数码管扫描时钟。\texttt{en\_clk}开关可切换为慢速单步时钟（用于调试）。
+    \item \textbf{显示控制}：通过 \texttt{choose[1:0]} 开关选择数码管显示内容：
+    \begin{itemize}
+        \item \texttt{00}：显示数据存储器结果（\texttt{result}）
+        \item \texttt{01}：显示当前PC值
+        \item \texttt{10}：显示当前指令
+    \end{itemize}
+\end{itemize}

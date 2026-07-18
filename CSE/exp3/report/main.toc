@@ -1,0 +1,27 @@
+\contentsline {section}{\numberline {1}实验目的}{3}{section.1}%
+\contentsline {section}{\numberline {2}实验环境}{3}{section.2}%
+\contentsline {section}{\numberline {3}系统架构}{4}{section.3}%
+\contentsline {subsection}{\numberline {3.1}整体架构}{4}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}数据通路}{4}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}与实验二的关系}{5}{subsection.3.3}%
+\contentsline {section}{\numberline {4}硬件设计}{5}{section.4}%
+\contentsline {subsection}{\numberline {4.1}方向按钮接入 GPIO}{5}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}七段数码管显示分数}{6}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}不用 VGA}{6}{subsection.4.3}%
+\contentsline {section}{\numberline {5}软件设计}{6}{section.5}%
+\contentsline {subsection}{\numberline {5.1}新增原始字节发送 \texttt {uart\_putc\_raw}}{7}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}贪吃蛇游戏逻辑}{7}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}UART 协议帧}{8}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}交叉编译}{8}{subsection.5.4}%
+\contentsline {section}{\numberline {6}PC 端设计}{9}{section.6}%
+\contentsline {subsection}{\numberline {6.1}协议解析与帧同步}{9}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}双线程渲染架构}{9}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}调试工具与启动器}{10}{subsection.6.3}%
+\contentsline {section}{\numberline {7}下板验证}{10}{section.7}%
+\contentsline {subsection}{\numberline {7.1}编译与烧录流程}{10}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}验证结果}{10}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}验证结论}{15}{subsection.7.3}%
+\contentsline {section}{\numberline {8}总结}{15}{section.8}%
+\contentsline {subsection}{\numberline {8.1}实验收获}{15}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}遇到的问题与解决方法}{16}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}可改进方向}{16}{subsection.8.3}%

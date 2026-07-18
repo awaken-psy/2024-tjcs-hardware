@@ -1,0 +1,53 @@
+\section{软件移植}
+
+\subsection{BootLoader修改}
+
+BootLoader运行在SPI Flash中（地址\texttt{0x30000000}起始），负责在系统上电后完成以下工作：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 轮询GPIO等待DDR2初始化校准完成。
+    \item 通过SPI Flash控制器将$\mu$C/OS-II操作系统映像从Flash搬移到DDR2 SDRAM中。
+    \item 跳转到DDR2中的操作系统入口地址开始执行。
+\end{enumerate}
+
+由于BootLoader源码的label命名（如\texttt{L1}、\texttt{L2}、\texttt{L3}）可能与其他模块冲突，需要将label改为更具体的名称以防止符号重定义。
+
+BootLoader中UART初始化的分频系数需要根据实际系统时钟频率进行调整。原始设计中系统时钟为100 MHz，UART波特率为9600，分频系数为：
+
+\[
+\text{divisor} = \frac{f_{\text{clk}}}{16 \times \text{baud}} = \frac{100\,\text{MHz}}{16 \times 9600} = 651
+\]
+
+本实验中系统时钟仍为50 MHz但波特率改为4800，分频系数保持651不变。若系统时钟为100 MHz且波特率为9600，则分频系数仍为651。因此需要确认BootLoader中的分频系数与实际时钟/波特率配置一致。
+
+\subsection{$\mu$C/OS-II系统源码修改}
+
+$\mu$C/OS-II系统的源码需要修改UART分频参数以适配本实验的硬件配置。具体修改位于\texttt{openmips.h}头文件中，需要将系统时钟频率和波特率对应的分频系数设置为与BootLoader一致。
+
+\subsection{交叉编译与OS.bin生成}
+
+在Ubuntu虚拟机中完成以下编译流程：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{环境搭建}：安装MIPS交叉编译工具链（mips-sde-elf，基于GCC 4.3）。
+    \begin{lstlisting}[style=c, caption={设置环境变量}]
+export PATH=$PATH:/opt/mips-4.3/bin
+    \end{lstlisting}
+
+    \item \textbf{编译}：使用Makefile编译BootLoader、$\mu$C/OS-II内核、硬件抽象层（common）和移植层（port），链接生成\texttt{ucosii.om}（ELF格式）。
+    \begin{lstlisting}[style=c, caption={编译链接命令}]
+mips-sde-elf-gcc -Tram.ld -o ucosii.om \
+    common/common.o ucos/ucos.o port/port.o \
+    -nostdlib -lgcc -e 256
+    \end{lstlisting}
+
+    \item \textbf{生成二进制文件}：使用\texttt{objcopy}将ELF格式转换为纯二进制格式\texttt{ucosii.bin}。
+    \begin{lstlisting}[style=c, caption={生成二进制文件}]
+mips-sde-elf-objcopy -O binary ucosii.om ucosii.bin
+    \end{lstlisting}
+
+    \item \textbf{合并生成OS.bin}：使用\texttt{BinMerge.exe}工具将BootLoader和$\mu$C/OS-II二进制文件合并为最终的\texttt{OS.bin}文件。该文件包含完整的启动代码和操作系统映像，需要烧录到SPI Flash的起始地址。
+    \begin{lstlisting}[style=c, caption={合并生成OS.bin}]
+./BinMerge.exe -f ucosii.bin -o OS.bin
+    \end{lstlisting}
+\end{enumerate}

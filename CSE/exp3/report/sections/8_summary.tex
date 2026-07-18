@@ -1,0 +1,43 @@
+\section{总结}
+
+\subsection{实验收获}
+
+通过本次贪吃蛇应用开发，我对以下内容有了更深入的理解：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{实时操作系统应用开发}：在 $\mu$C/OS-II 上编写用户任务，理解了任务调度、时钟节拍（CP0 Count/Compare）、\texttt{OSTimeDly} 节奏控制的机制。
+    \item \textbf{通信协议设计}：从零设计了一个鲁棒的二进制帧协议（帧头定界 + 定长 + 位图 + XOR 校验），体会到"自同步"对串口丢字节的重要性。
+    \item \textbf{交叉编译全流程}：独立获取并部署 MIPS 工具链，理解了链接脚本、入口地址、\texttt{-nostdlib} 下无标准库的约束，以及 GCC 版本差异导致必须全量重编的坑。
+    \item \textbf{软硬件协同}：通过 GPIO 同时驱动按钮输入与数码管输出、UART 上报状态，把 CPU、总线、外设、操作系统、应用串成完整链路。
+    \item \textbf{嵌入式调试方法}：先用 \texttt{debug\_rx} 单独验证 FPGA 发帧，再接 GUI 渲染——分层隔离的调试思路极大提升了定位问题的效率。
+\end{enumerate}
+
+\subsection{遇到的问题与解决方法}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{MIPS 工具链缺失}：本机与课程均未提供 \texttt{mips-sde-elf-gcc}。\\
+        \textit{解决}：从 GitHub \texttt{RT-Thread/toolchains-ci} release v1.1 下载 Sourcery CodeBench 2016.05 工具链，在 WSL Ubuntu 安装 32 位兼容库（\texttt{libc6:i386} 等）后运行。
+
+    \item \textbf{UART 收不到数据}：PC 端最初按 9600 波特率接收，完全收不到帧。\\
+        \textit{解决}：\texttt{openmips.h} 的 \texttt{IN\_CLK=100\,MHz} 是误导注释，CPU 实际跑 50\,MHz，分频系数 651 对应实际波特率 4800。PC 端改 4800 后立即正常。
+
+    \item \textbf{Flash 烧录型号选错}：Vivado 默认候选 \texttt{mt25ql128}，烧录报 \texttt{Part selected mt25ql128, but part s25fl128sxxxxx0 detected}。\\
+        \textit{解决}：本板 Flash 实为 Spansion S25FL128S，改选 \texttt{s25fl128sxxxxx0-spi-x1\_x2\_x4} 后烧录成功。
+
+    \item \textbf{搬工程后 Vivado Sources 为空}：复制实验二工程目录并改名后，打开 \texttt{exp3.xpr} 设计源面板无文件。\\
+        \textit{解决}：原空白工程残留的 \texttt{exp3.cache/.hw/.sim/.ip\_user\_files} 与新 \texttt{.xpr} 冲突，删除这四个目录后重新打开即正常加载。
+
+    \item \textbf{二进制帧被字符过滤破坏}：原 \texttt{uart\_putc} 把 \texttt{0x0A} 自动追加 \texttt{0x0D}，导致位图字节错位、PC 校验失败。\\
+        \textit{解决}：新增 \texttt{uart\_putc\_raw} 原始字节发送函数，协议帧专用，杜绝字符替换。
+
+    \item \textbf{WSL 编译 PATH 报语法错}：WSL 继承的 Windows PATH 含 \texttt{Program Files (x86)}，括号使 \texttt{export PATH=...:\$PATH} 报 bash 语法错误。\\
+        \textit{解决}：编译时用临时 \texttt{PATH="/home/.../bin:/usr/bin:/bin"} 绕开，并封装进 \texttt{build.sh}。
+\end{enumerate}
+
+\subsection{可改进方向}
+
+\begin{itemize}[leftmargin=2em]
+    \item 数码管目前显示十六进制分数，可改为十进制 BCD 显示更直观。
+    \item 可在画面上叠加游戏开始/结束的提示文字，或加入难度递增（速度随分数提升）。
+    \item 协议帧可由"全量位图"优化为"增量帧"，降低 UART 流量，支持更高帧率。
+\end{itemize}

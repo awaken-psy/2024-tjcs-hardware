@@ -1,0 +1,57 @@
+\section{测试程序分析}
+
+\subsection{测试程序结构}
+
+测试程序由11个测试函数组成，覆盖全部89条MIPS指令、CP0功能和时钟中断。程序入口为 \texttt{main} 函数，依次调用每个测试函数，函数之间通过 \texttt{func\_reset} 清零所有通用寄存器。
+
+程序内存布局：
+\begin{itemize}[leftmargin=2em]
+    \item \texttt{.text} 段起始地址：\texttt{0x00400000}
+    \item \texttt{.data} 段起始地址：\texttt{0x10010000}
+    \item 异常处理例程位于 \texttt{0x00400004}（第2条指令处）
+    \item \texttt{ANSCODE} 位于 \texttt{.data} 段起始处（\texttt{0x10010000}），用于数码管显示
+\end{itemize}
+
+\subsection{测试函数详情}
+
+\begin{longtable}{clp{8cm}c}
+    \toprule
+    \textbf{编号} & \textbf{错误码} & \textbf{测试内容} & \textbf{指令数} \\
+    \midrule
+    \endhead
+    1 & $-1$ & 54条基本指令：addi, addiu, andi, ori, slti, sltiu, lui, xori, and, beq, bne, j, jal, jr, lw, sw, mul, sll, sub & 19 \\
+    2 & $-2$ & mfhi, mflo, div, divu & 4 \\
+    3 & $-3$ & sb, lb, lbu, sh, lh, lhu, mthi, mtlo, mfhi, mflo, sltu, sllv, srav, srlv, sra, srl, subu, add, addu, slt, clz, clo & 22 \\
+    4 & $-4$ & jalr & 1 \\
+    5 & $-5$ & mult, multu, madd, maddu, msub, msubu & 6 \\
+    6 & $-6$ & movn, movz & 2 \\
+    7 & $-7$ & bgez, bgtz, blez, bltz, bltzal, bgezal & 6 \\
+    8 & $-8$ & lwl, lwr, swl, swr & 4 \\
+    9 & $-9$ & ll, sc & 2 \\
+    10 & $-10$ & CP0相关：自陷指令、syscall、break、eret、mfc0、mtc0 & 多条 \\
+    11 & --- & 时钟中断功能测试 & --- \\
+    \bottomrule
+    \caption{测试函数一览}
+\end{longtable}
+
+\subsection{测试结果判定}
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{正确结果}：所有测试函数通过后，程序将 \texttt{ANSCODE}（地址 \texttt{0x10010000}）的值设为 \texttt{0x0001}，数码管低半字显示 \texttt{0001}。之后使能时钟中断，每次中断会使高半字加1，因此高半字持续递增。
+    \item \textbf{错误结果}：若某个测试函数失败，程序将对应的负数错误码写入 \texttt{ANSCODE} 后进入死循环。例如显示 \texttt{FFFD}（即$-3$）表示测试函数3失败。
+\end{itemize}
+
+\subsection{异常处理例程}
+
+测试程序的异常处理例程位于 \texttt{0x00400004}，处理以下异常：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 读取Cause寄存器的异常码（\texttt{ExcCode}，即 \texttt{Cause[6:2]} 对应的低8位）。
+    \item 根据异常码跳转到对应的处理分支：
+    \begin{itemize}
+        \item 异常码 = \texttt{0x00}：时钟中断，更新Compare寄存器并将 \texttt{ANSCODE} 高半字加1，然后执行 \texttt{eret} 返回。
+        \item 异常码 = \texttt{0x20}：syscall，设置标记后跳转到 \texttt{EPC+4}。
+        \item 异常码 = \texttt{0x28}：break，设置标记后跳转到 \texttt{EPC+4}。
+        \item 异常码 = \texttt{0x34}：自陷（teq等），设置标记后跳转到 \texttt{EPC+4}。
+    \end{itemize}
+\end{enumerate}

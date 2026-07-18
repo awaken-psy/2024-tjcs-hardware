@@ -1,0 +1,55 @@
+os_flag.o: os_flag.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_mbox.o: os_mbox.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_mem.o: os_mem.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_mutex.o: os_mutex.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_q.o: os_q.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_sem.o: os_sem.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_task.o: os_task.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_time.o: os_time.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_tmr.o: os_tmr.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_dbg_r.o: os_dbg_r.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h
+os_core.o: os_core.c /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h

@@ -1,0 +1,56 @@
+\section{硬件设计}
+
+硬件以实验二工程为起点（整目录复制为 \texttt{exp3}，IP 重新生成），增量改动如下。
+
+\subsection{方向按钮接入 GPIO}
+
+实验二约束文件中 \texttt{gpio\_i[1..4]} 原本接拨码开关，仅 \texttt{gpio\_i[0]} 接了中心按钮 BTNC。为支持贪吃蛇四向控制，将 \texttt{gpio\_i[1..4]} 改接 Nexys 4 DDR 的四个方向按钮（与软件按钮位定义对齐）：
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{cccc}
+        \toprule
+        \textbf{GPIO 位} & \textbf{按钮} & \textbf{引脚} & \textbf{含义} \\
+        \midrule
+        \texttt{gpio\_i[0]} & BTNC & N17 & 中（开始/重开） \\
+        \texttt{gpio\_i[1]} & BTNU & M18 & 上 \\
+        \texttt{gpio\_i[2]} & BTNR & M17 & 右 \\
+        \texttt{gpio\_i[3]} & BTND & P18 & 下 \\
+        \texttt{gpio\_i[4]} & BTLN & P17 & 左 \\
+        \bottomrule
+    \end{tabular}
+    \caption{方向按钮引脚约束}
+\end{table}
+
+\begin{lstlisting}[style=verilog, caption={xdc 中方向按钮约束}]
+## Direction buttons for snake: [1]=UP [2]=RIGHT [3]=DOWN [4]=LEFT
+set_property -dict {PACKAGE_PIN M18 IOSTANDARD LVCMOS33} [get_ports {gpio_i[1]}]
+set_property -dict {PACKAGE_PIN M17 IOSTANDARD LVCMOS33} [get_ports {gpio_i[2]}]
+set_property -dict {PACKAGE_PIN P18 IOSTANDARD LVCMOS33} [get_ports {gpio_i[3]}]
+set_property -dict {PACKAGE_PIN P17 IOSTANDARD LVCMOS33} [get_ports {gpio_i[4]}]
+\end{lstlisting}
+
+顶层模块 \texttt{openmips\_min\_sopc} 的 \texttt{gpio\_i[15:0]} 位宽不变，按钮电平由 \texttt{\{15'h0, 1'b1, gpio\_i\}} 拼成 32 位送入 GPIO IP（bit16 恒为 1 用于 BootLoader 跳过 DDR2 初始化等待）。
+
+\subsection{七段数码管显示分数}
+
+实验二顶层为简化曾把数码管段选引脚注释掉（仅保留 8 位位选）。本实验为显示分数，重新接入数码管动态扫描模块 \texttt{seg7x16}：将其复制进工程，在顶层实例化，数据端接 GPIO 输出的高 16 位，软件写 \texttt{gpio\_out(score<<16)} 即可让数码管显示分数（十六进制）。
+
+\begin{lstlisting}[style=verilog, caption={顶层加回 seg7x16 实例（openmips\_min\_sopc.v）}]
+// 端口：删掉原 gpio_o[7:0]，改为：
+output wire [7:0] o_seg,
+output wire [7:0] o_sel,
+...
+// 内部：gpio_top 的 32 位输出 gpio_o_temp 高 16 位送数码管
+seg7x16 seg7x16_inst(
+    .clk(clk_in), .reset(~rst_n), .cs(1'b1),
+    .i_data({16'b0, gpio_o_temp[31:16]}),
+    .o_seg(o_seg), .o_sel(o_sel)
+);
+\end{lstlisting}
+
+约束文件按 Nexys 4 DDR 数码管引脚定义 \texttt{o\_seg}（段选 CA--CG/DP）与 \texttt{o\_sel}（位选 AN0--AN7）。
+
+\subsection{不用 VGA}
+
+与学长实现不同，本实验\textbf{不使用 VGA 显示}，因此不引入 \texttt{vga\_display} 模块，省去 VGA 时序与电阻串 DAC 的复杂度。画面渲染完全由 PC 端 pygame 完成，FPGA 仅经 UART 上报状态。

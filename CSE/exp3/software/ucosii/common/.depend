@@ -1,0 +1,17 @@
+openmips.o: openmips.c /mnt/d/CSE/exp3/software/ucosii/include/includes.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/lib/gcc/mips-sde-elf/5.3.0/include/stdarg.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/lib/gcc/mips-sde-elf/5.3.0/include/stddef.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/lib/gcc/mips-sde-elf/5.3.0/include-fixed/limits.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/lib/gcc/mips-sde-elf/5.3.0/include-fixed/syslimits.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/mips-sde-elf/include/limits.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/mips-sde-elf/include/newlib.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/mips-sde-elf/include/_ansi.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/mips-sde-elf/include/sys/config.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/mips-sde-elf/include/machine/ieeefp.h \
+ /home/awaken/mips-sde-elf/mips-2016.05/mips-sde-elf/include/sys/features.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/ucos_ii.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/app_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cfg.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/os_cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/cpu.h \
+ /mnt/d/CSE/exp3/software/ucosii/include/openmips.h

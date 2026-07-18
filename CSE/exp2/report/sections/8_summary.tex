@@ -1,0 +1,23 @@
+\section{实验总结}
+
+\subsection{实验收获}
+
+通过本次系统移植实验，我对以下内容有了更深入的理解：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{片上系统（SoC）设计}：掌握了基于Wishbone总线协议构建多从设备SoC的方法，理解了地址解码、总线仲裁和协议转换的设计要点。
+
+    \item \textbf{SPI Flash接口}：深入理解了SPI协议的时序要求和FPGA实现方法，特别是使用STARTUPE2原语驱动专用配置引脚的技术。
+
+    \item \textbf{DDR2 SDRAM控制}：了解了DDR2内存的基本工作原理（初始化校准、刷新、突发读写），掌握了使用Xilinx MIG IP核进行DDR2接口设计的方法。
+
+    \item \textbf{软件移植流程}：完整经历了从BootLoader修改、$\mu$C/OS-II源码适配、交叉编译到二进制文件生成与烧录的全流程，理解了嵌入式系统"存储-搬运-执行"的启动模型。
+
+    \item \textbf{FPGA时序调试}：学会了使用Vivado ILA进行片上调试的方法，深刻体会到时序敏感的硬件设计中"测量优于推理"的调试原则。
+
+    \item \textbf{系统级思维}：理解了CPU、总线、存储器、外设各模块之间的协同工作关系，以及从单个模块调试到全系统联调的调试方法论。
+\end{enumerate}
+
+\subsection{实验结果}
+
+本实验成功将$\mu$C/OS-II实时操作系统移植到基于OpenMIPS CPU的自定义FPGA SoC平台上。系统上电后，BootLoader从SPI Flash取指执行，将操作系统映像搬移到DDR2 SDRAM，随后$\mu$C/OS-II在DDR2中成功启动并通过UART输出完整的启动日志，同时数码管递增显示验证了GPIO功能正常。实验目标全部达成。

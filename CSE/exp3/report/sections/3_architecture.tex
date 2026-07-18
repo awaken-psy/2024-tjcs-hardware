@@ -1,0 +1,59 @@
+\section{系统架构}
+
+\subsection{整体架构}
+
+本系统采用"瘦 FPGA 主机 + 胖 PC 客户端"的分工：\textbf{游戏逻辑全部在 FPGA 内的 OpenMIPS 处理器上运行}，PC 仅负责接收状态、渲染画面。两者通过 UART 串口单向通信（FPGA $\rightarrow$ PC），输入由开发板按钮完成，不占用串口。系统结构如图~\ref{fig:arch} 所示。
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        box/.style={draw, thick, rounded corners, minimum width=2.6cm, minimum height=0.9cm, align=center, font=\small},
+        fpga/.style={box, fill=blue!10},
+        pc/.style={box, fill=green!10},
+        io/.style={box, fill=gray!15},
+        uart/.style={box, fill=orange!15},
+        arr/.style={-Stealth, thick},
+        grp/.style={draw, dashed, thick, rounded corners, inner sep=10pt},
+    ]
+        % ---- FPGA 侧（左）----
+        \node[fpga] (cpu) {OpenMIPS CPU\\(50\,MHz)};
+        \node[fpga, below=0.45cm of cpu] (os) {$\mu$C/OS-II\\贪吃蛇任务};
+        \node[uart, below=0.45cm of os] (uart) {UART 16550 (TX)};
+        \node[io, left=1.0cm of os] (gpio) {GPIO\\按钮输入};
+
+        \node[grp, fit=(cpu)(os)(uart)(gpio),
+              label={[font=\small\bfseries, anchor=south west]south west:Nexys 4 DDR (FPGA)}] {};
+
+        % ---- PC 侧（右）----
+        \node[pc, right=3.2cm of uart] (pyr) {pyserial\\读线程};
+        \node[pc, above=0.6cm of pyr] (gui) {pygame\\渲染};
+        \node[io, right=0.7cm of gui] (disp) {图形窗口\\分数/画面};
+
+        \node[grp, fit=(pyr)(gui)(disp),
+              label={[font=\small\bfseries, anchor=south east]south east:PC}] {};
+
+        % ---- 连接 ----
+        \draw[arr] (cpu) -- (os);
+        \draw[arr] (os) -- (uart);
+        \draw[arr] (gpio) -- (os);
+        \draw[arr, dashed] (uart) -- node[above,font=\footnotesize]{UART 4800 8N1}
+                                   node[below,font=\scriptsize]{41 字节状态帧} (pyr);
+        \draw[arr] (pyr) -- (gui);
+        \draw[arr] (gui) -- (disp);
+    \end{tikzpicture}
+    \caption{贪吃蛇系统整体架构}
+    \label{fig:arch}
+\end{figure}
+
+\subsection{数据通路}
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{输入}：玩家按下开发板方向按钮（BTNU/D/L/R），电平送入 GPIO 输入寄存器，CPU 通过 \texttt{gpio\_in()} 读取，更新蛇的移动方向（禁止 180\textdegree 反向）。
+    \item \textbf{游戏逻辑}：$\mu$C/OS-II 的 \texttt{TaskStart} 任务每个时钟节拍（\texttt{OSTimeDly(20)}，约 200\,ms）执行一次：蛇按当前方向前进一格，判定吃食物/撞墙/撞自身，更新蛇身坐标与分数。
+    \item \textbf{状态上报}：每次移动后把蛇身位图、食物坐标、分数、游戏状态打包成固定 41 字节的二进制帧，经 UART 发送给 PC。
+    \item \textbf{画面渲染}：PC 的 pygame 后台线程持续读串口、按帧头同步并校验，主线程据最新帧重绘 16$\times$16 网格画面。
+\end{enumerate}
+
+\subsection{与实验二的关系}
+
+本实验\textbf{完整复用实验二的 SoC 硬件}（OpenMIPS 处理器、Wishbone 总线、UART16550、GPIO、SPI Flash、DDR2 MIG、$\mu$C/OS-II 操作系统与 BootLoader），仅在以下三处做增量改动：(1) 约束文件把 4 个方向按钮接入 GPIO；(2) 加回七段数码管用于显示分数；(3) 替换用户任务 \texttt{TaskStart} 的函数体为贪吃蛇逻辑。地址映射、启动流程、交叉编译链均与实验二一致。

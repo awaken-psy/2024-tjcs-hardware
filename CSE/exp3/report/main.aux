@@ -1,0 +1,57 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand*\HyPL@Entry[1]{}
+\HyPL@Entry{0<</S/D>>}
+\HyPL@Entry{1<</S/D>>}
+\@writefile{toc}{\contentsline {section}{\numberline {1}实验目的}{3}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}实验环境}{3}{section.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces 实验环境}}{3}{table.caption.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}系统架构}{4}{section.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}整体架构}{4}{subsection.3.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces 贪吃蛇系统整体架构}}{4}{figure.caption.2}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:arch}{{1}{4}{贪吃蛇系统整体架构}{figure.caption.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}数据通路}{4}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}与实验二的关系}{5}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}硬件设计}{5}{section.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}方向按钮接入 GPIO}{5}{subsection.4.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces 方向按钮引脚约束}}{5}{table.caption.3}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}{\ignorespaces xdc 中方向按钮约束}}{5}{lstlisting.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}七段数码管显示分数}{6}{subsection.4.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}{\ignorespaces 顶层加回 seg7x16 实例（openmips\_min\_sopc.v）}}{6}{lstlisting.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}不用 VGA}{6}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5}软件设计}{6}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}新增原始字节发送 \texttt  {uart\_putc\_raw}}{7}{subsection.5.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}{\ignorespaces 原始字节发送（openmips.c）}}{7}{lstlisting.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}贪吃蛇游戏逻辑}{7}{subsection.5.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}{\ignorespaces TaskStart 主循环（节选）}}{7}{lstlisting.4}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}{\ignorespaces 回环边界处理（step\_snake）}}{8}{lstlisting.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}UART 协议帧}{8}{subsection.5.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces UART 协议帧格式（41 字节，FPGA $\rightarrow $ PC）}}{8}{table.caption.4}\protected@file@percent }
+\newlabel{tab:frame}{{3}{8}{UART 协议帧格式（41 字节，FPGA $\rightarrow $ PC）}{table.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}交叉编译}{8}{subsection.5.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}PC 端设计}{9}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}协议解析与帧同步}{9}{subsection.6.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6}{\ignorespaces 帧解析（snake\_gui.py）}}{9}{lstlisting.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}双线程渲染架构}{9}{subsection.6.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7}{\ignorespaces 主渲染循环（节选）}}{9}{lstlisting.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}调试工具与启动器}{10}{subsection.6.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}下板验证}{10}{section.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}编译与烧录流程}{10}{subsection.7.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}验证结果}{10}{subsection.7.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces 串口帧调试输出（debug\_rx.py）}}{11}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:debug}{{2}{11}{串口帧调试输出（debug\_rx.py）}{figure.caption.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces pygame 运行中画面}}{12}{figure.caption.6}\protected@file@percent }
+\newlabel{fig:gui}{{3}{12}{pygame 运行中画面}{figure.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces 边界回环：蛇头从一侧穿出，从对侧穿进}}{13}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:loop}{{4}{13}{边界回环：蛇头从一侧穿出，从对侧穿进}{figure.caption.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Game Over 画面}}{14}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:over}{{5}{14}{Game Over 画面}{figure.caption.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces 数码管显示分数（开发板实物）}}{15}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:seg}{{6}{15}{数码管显示分数（开发板实物）}{figure.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}验证结论}{15}{subsection.7.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}总结}{15}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.1}实验收获}{15}{subsection.8.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.2}遇到的问题与解决方法}{16}{subsection.8.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {8.3}可改进方向}{16}{subsection.8.3}\protected@file@percent }
+\gdef \@abspage@last{17}

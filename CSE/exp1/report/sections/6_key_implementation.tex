@@ -1,0 +1,97 @@
+\section{关键技术实现}
+
+\subsection{数据前推（Forwarding）}
+
+为解决数据冒险，译码阶段直接从EX和MEM阶段获取尚未写回的结果：
+
+\begin{lstlisting}[caption={数据前推逻辑（以源操作数1为例）}]
+if (pre_inst_is_load && ex_wd_i == reg1_addr_o && reg1_read_o)
+    stallreq_for_reg1_loadrelate <= `Stop;  // load-use冒险
+else if (reg1_read_o && ex_wreg_i && ex_wd_i == reg1_addr_o)
+    reg1_o <= ex_wdata_i;                   // EX阶段前推
+else if (reg1_read_o && mem_wreg_i && mem_wd_i == reg1_addr_o)
+    reg1_o <= mem_wdata_i;                  // MEM阶段前推
+else if (reg1_read_o)
+    reg1_o <= reg1_data_i;                  // 正常读寄存器堆
+else
+    reg1_o <= imm;                          // 使用立即数
+\end{lstlisting}
+
+EX阶段的前推优先级高于MEM阶段，确保使用最新的计算结果。当前一条指令为load且存在数据依赖时，必须插入一个气泡（stall），因为load的数据在MEM阶段才可用。
+
+\subsection{乘累加/乘累减指令}
+
+MADD/MADDU/MSUB/MSUBU指令需要两个时钟周期完成：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 第一个周期：完成乘法运算，将结果暂存到 \texttt{hilo\_temp\_o}，同时请求流水线暂停。
+    \item 第二个周期：将乘法结果与HI:LO寄存器的当前值相加（或相减），得到最终结果。
+\end{enumerate}
+
+通过 \texttt{cnt} 计数器（存储在 \texttt{ex\_mem} 流水线寄存器中）区分当前处于第几个周期。
+
+\subsection{试商法除法器}
+
+除法运算采用32周期试商法实现，由独立的 \texttt{div} 模块完成。状态机包含四个状态：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{DivFree}：空闲状态，收到启动信号后进入运算。
+    \item \textbf{DivOn}：执行32轮移位-减法迭代。每轮将被除数左移1位，尝试减去除数，若够减则商对应位为1。
+    \item \textbf{DivByZero}：除数为零时的特殊处理，结果置零。
+    \item \textbf{DivEnd}：运算完成，输出商和余数，并对有符号除法进行符号修正。
+\end{enumerate}
+
+除法期间EX阶段发出暂停请求，直到除法器就绪。
+
+\subsection{异常处理机制}
+
+异常处理贯穿整条流水线，采用精确异常模型：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{ID阶段}：检测syscall、eret指令和无效指令，生成初步异常类型向量。
+    \item \textbf{EX阶段}：检测自陷条件和算术溢出，补充异常类型向量。
+    \item \textbf{MEM阶段}：综合所有异常源（包括外部中断），结合CP0的Status寄存器判断是否真正触发异常，确定最终异常类型。
+    \item \textbf{CTRL模块}：根据异常类型发出flush信号清空流水线，将PC设置为异常入口地址 \texttt{0x00400004}。
+    \item \textbf{CP0模块}：保存EPC、设置Cause和Status寄存器。
+\end{enumerate}
+
+\begin{lstlisting}[caption={MEM阶段异常判定逻辑}]
+if (current_inst_address_i != `ZeroWord) begin
+    if (((cp0_cause[15:8] & cp0_status[15:8]) != 8'h00)
+        && (cp0_status[1] == 1'b0) && (cp0_status[0] == 1'b1))
+        excepttype_o <= 32'h00000001;    // 中断
+    else if (excepttype_i[8] == 1'b1)
+        excepttype_o <= 32'h00000008;    // syscall
+    else if (excepttype_i[9] == 1'b1)
+        excepttype_o <= 32'h0000000a;    // 无效指令
+    else if (excepttype_i[10] == 1'b1)
+        excepttype_o <= 32'h0000000d;    // 自陷
+    else if (excepttype_i[11] == 1'b1)
+        excepttype_o <= 32'h0000000c;    // 溢出
+    else if (excepttype_i[12] == 1'b1)
+        excepttype_o <= 32'h0000000e;    // eret
+end
+\end{lstlisting}
+
+\subsection{大端模式下的字节/半字访问}
+
+数据RAM使用4个独立的字节bank（data\_mem3为最高字节，data\_mem0为最低字节），大端模式下地址偏移量为0对应最高字节（data\_mem3）。以LB指令为例：
+
+\begin{lstlisting}[caption={LB指令在大端模式下的字节选择}]
+case (mem_addr_i[1:0])
+    2'b00: wdata_o <= {{24{mem_data_i[31]}}, mem_data_i[31:24]}; // 最高字节
+    2'b01: wdata_o <= {{24{mem_data_i[23]}}, mem_data_i[23:16]};
+    2'b10: wdata_o <= {{24{mem_data_i[15]}}, mem_data_i[15:8]};
+    2'b11: wdata_o <= {{24{mem_data_i[7]}},  mem_data_i[7:0]};   // 最低字节
+endcase
+\end{lstlisting}
+
+\subsection{非对齐访存（LWL/LWR/SWL/SWR）}
+
+LWL/LWR指令支持从非字对齐地址加载一个字，通过将内存数据与寄存器原值拼接实现。例如 LWL 在地址偏移为01时：
+
+\begin{lstlisting}[caption={LWL地址偏移01的拼接逻辑}]
+2'b01: wdata_o <= {mem_data_i[23:0], reg2_i[7:0]};
+\end{lstlisting}
+
+即从内存读取3个字节放到结果的高24位，保留寄存器原值的低8位。SWL/SWR的处理逻辑类似，通过 \texttt{mem\_sel\_o} 字节选择信号控制哪些字节被写入。
